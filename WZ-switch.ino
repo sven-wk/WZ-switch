@@ -58,31 +58,23 @@ const char* effect = "solid";
 String effectString = "solid";
 String oldeffectString = "solid";
 
-/*********************************** Relais setings  ***********************************/
+/*********************************** relay setings  ***********************************/
 
-// Relais state new
-bool relais1State = false;
-bool relais2State = false;
-bool relais3State = false;
-bool relais4State = false;
+// relay state new
+bool relay1State = false;
+bool relay2State = false;
 
-// Relais state old
-bool relais1StateOld = false;
-bool relais2StateOld = false;
-bool relais3StateOld = false;
-bool relais4StateOld = false;
+// relay state old
+bool relay1StateOld = false;
+bool relay2StateOld = false;
 
-// relais Pins
-const byte relais1Pin = 14;
-const byte relais2Pin = 27;
-const byte relais3Pin = 26;
-const byte relais4Pin = 25;
+// relay Pins
+const byte relay1Pin = 14;
+const byte relay2Pin = 27;
 
-// relais Pins default
-int pin1State = HIGH; // relais switch must be high for off (LED off)
+// relay Pins default
+int pin1State = HIGH; // relay switch must be high for off (LED off)
 int pin2State = HIGH;
-int pin3State = HIGH;
-int pin4State = HIGH;
 
 /********************************** Taster settings  ***********************************/
 OneButton button1(17, false);
@@ -118,7 +110,6 @@ unsigned long rcReceived=0;
 /****************************************FOR JSON***************************************/
 const int BUFFER_SIZE = JSON_OBJECT_SIZE(10);
 #define MQTT_MAX_PACKET_SIZE 512
-
 
 
 /*********************************** FastLED Defintions ********************************/
@@ -204,14 +195,6 @@ uint8_t   count =   0;                                        // Count up to 255
 uint8_t fadeval = 224;                                        // Trail behind the LED's. Lower => faster fade.
 uint8_t bpm = 30;
 
-//LIGHTNING
-uint8_t frequency = 50;                                       // controls the interval between strikes
-uint8_t flashes = 8;                                          //the upper limit of flashes per strike
-unsigned int dimmer = 1;
-uint8_t ledstart;                                             // Starting location of a flash
-uint8_t ledlen;
-int lightningcounter = 0;
-
 //FUNKBOX
 int idex = 0;                //-LED INDEX (0 to NUM_LEDS-1
 int TOP_INDEX = int(NUM_LEDS / 2);
@@ -257,17 +240,13 @@ void setup() {
   setupStripedPalette( CRGB::Red, CRGB::Red, CRGB::White, CRGB::White); //for CANDY CANE
   gPal = HeatColors_p; //for FIRE
 
-  // Relais pins
-  pinMode(relais1Pin, OUTPUT);
-  pinMode(relais2Pin, OUTPUT);
-  pinMode(relais3Pin, OUTPUT);
-  pinMode(relais4Pin, OUTPUT);
+  // relay pins
+  pinMode(relay1Pin, OUTPUT);
+  pinMode(relay2Pin, OUTPUT);
 
   // Set all ralais to HIGH to be off after start
-  digitalWrite(relais1Pin, HIGH);
-  digitalWrite(relais2Pin, HIGH);
-  digitalWrite(relais3Pin, HIGH);
-  digitalWrite(relais4Pin, HIGH);
+  digitalWrite(relay1Pin, HIGH);
+  digitalWrite(relay2Pin, HIGH);
 
   // RC-Receiver is connected to Pin 22
   mySwitch.enableReceive(rcReceiverPin);
@@ -407,55 +386,33 @@ bool processJson(char* message) {
     return false;
   }
 
-  // Relais handling
-  if (root.containsKey("relais1")) {
-    if (strcmp(root["relais1"], on_cmd) == 0) {
-      relais1State = true;
+  // relay handling
+  if (root.containsKey("relay1")) {
+    if (strcmp(root["relay1"], on_cmd) == 0) {
+      relay1State = true;
     }
-    else if (strcmp(root["relais1"], off_cmd) == 0) {
-      relais1State = false;
-    }
-  }
-
-   if (root.containsKey("relais2")) {
-    if (strcmp(root["relais2"], on_cmd) == 0) {
-      relais2State = true;
-    }
-    else if (strcmp(root["relais2"], off_cmd) == 0) {
-      relais2State = false;
+    else if (strcmp(root["relay1"], off_cmd) == 0) {
+      relay1State = false;
     }
   }
 
-   if (root.containsKey("relais3")) {
-    if (strcmp(root["relais3"], on_cmd) == 0) {
-      relais3State = true;
-      stateOn = true;
+   if (root.containsKey("relay2")) {
+    if (strcmp(root["relay2"], on_cmd) == 0) {
+      relay2State = true;
     }
-    else if (strcmp(root["relais3"], off_cmd) == 0) {
-      relais3State = false;
-      stateOn = false;
-      onbeforeflash = false;
+    else if (strcmp(root["relay2"], off_cmd) == 0) {
+      relay2State = false;
     }
   }
 
-  if (root.containsKey("relais4")) {
-    if (strcmp(root["relais4"], on_cmd) == 0) {
-      relais4State = true;
-    }
-    else if (strcmp(root["relais4"], off_cmd) == 0) {
-      relais4State = false;
-    }
-  }
 
   if (root.containsKey("state")) {
     if (strcmp(root["state"], on_cmd) == 0) {
-      relais3State = true;
       stateOn = true;
     }
     else if (strcmp(root["state"], off_cmd) == 0) {
       stateOn = false;
       onbeforeflash = false;
-      relais3State = false;
     }
   }
 
@@ -571,12 +528,12 @@ void sendState() {
   client.publish(light_state_topic, buffer, true);
 }
 
-void sendStateRelais1() {
+void sendStaterelay1() {
   StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
 
   JsonObject& root = jsonBuffer.createObject();
 
-  root["relais1"] = (relais1State) ? on_cmd : off_cmd;
+  root["relay1"] = (relay1State) ? on_cmd : off_cmd;
   
   char buffer[root.measureLength() + 1];
   root.printTo(buffer, sizeof(buffer));
@@ -584,39 +541,12 @@ void sendStateRelais1() {
   client.publish(light_state_topic, buffer, true);
 }
 
-void sendStateRelais2() {
+void sendStaterelay2() {
   StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
 
   JsonObject& root = jsonBuffer.createObject();
 
-  root["relais2"] = (relais2State) ? on_cmd : off_cmd;
-  
-  char buffer[root.measureLength() + 1];
-  root.printTo(buffer, sizeof(buffer));
-
-  client.publish(light_state_topic, buffer, true);
-}
-
-void sendStateRelais3() {
-  StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
-
-  JsonObject& root = jsonBuffer.createObject();
-
-  root["relais3"] = (relais3State) ? on_cmd : off_cmd;
-  
-  char buffer[root.measureLength() + 1];
-  root.printTo(buffer, sizeof(buffer));
-
-  client.publish(light_state_topic, buffer, true);
-}
-
-
-void sendStateRelais4() {
-  StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
-
-  JsonObject& root = jsonBuffer.createObject();
-
-  root["relais4"] = (relais4State) ? on_cmd : off_cmd;
+  root["relay2"] = (relay2State) ? on_cmd : off_cmd;
   
   char buffer[root.measureLength() + 1];
   root.printTo(buffer, sizeof(buffer));
@@ -675,9 +605,8 @@ void setColor(int inR, int inG, int inB) {
 
 /******************************** Setup button 1 action ************************************/
 void button1click() {
-  //relais1State = !relais1State;
+  //relay1State = !relay1State;
   gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns);
-  Serial.println(gCurrentPatternNumber);
 }
 
 
@@ -711,10 +640,9 @@ void loop() {
       //sendState();
     }
     else {
-      relais3State = true;
       stateOn = true;
     }
-    buttonEffectChanged = !buttonEffectChanged;
+    buttonEffectChanged = !buttonEffectChanged; // Used later to send status to MQTT
     gPreviousPatternNumber = gCurrentPatternNumber;
   }
 
@@ -726,100 +654,132 @@ void loop() {
     if (mySwitch.getReceivedValue() == 0) {
       Serial.print("Unknown encoding");
     } else {
-      Serial.print("Received: ");
-      Serial.println( rcReceived );
+      // Serial.print("Received: ");
+      // Serial.println( rcReceived );
      
       if ( rcAOn == rcReceived ) {
-        relais1State = true;
-        Serial.println("RC singal ON received: Channel A switch status changed to LOW=ON");
+        relay1State = true;
+        Serial.println("RC singal ON received: Channel A");
       }
       if ( rcAOff == rcReceived ) {
-        relais1State = false;
-        Serial.println("RC singal OFF received: Channel A switch status changed to HIGH=OFF");
+        relay1State = false;
+        Serial.println("RC singal OFF received: Channel A");
       }
       if ( rcBOn == rcReceived ) {
-        relais2State = true;
-        Serial.println("RC singal ON received: Channel B switch status changed to LOW=ON");
+        relay2State = true;
+        Serial.println("RC singal ON received: Channel B");
       }
       if ( rcBOff == rcReceived ) {
-        relais2State = false;
-        Serial.println("RC singal OFF received: Channel B switch status changed to HIGH=OFF");
+        relay2State = false;
+        Serial.println("RC singal OFF received: Channel B");
       }
       if ( rcCOn == rcReceived ) {
-        relais3State = true;
-        Serial.println("RC singal ON received: Channel C switch status changed to LOW=ON");
+        Serial.println("RC singal ON received: Channel C");
+        if ( stateOn == false ) {
+          stateOn = true;
+          effectString = "solid";
+          setColor(25, 7, 3); // Write current values to LED pins
+          // Send status to MQTT
+          StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
+
+          JsonObject& root = jsonBuffer.createObject();
+        
+          root["state"] = (stateOn) ? on_cmd : off_cmd;
+          JsonObject& color = root.createNestedObject("color");
+          color["r"] = red;
+          color["g"] = green;
+          color["b"] = blue;
+        
+          root["brightness"] = brightness;
+          root["effect"] = effectString.c_str();
+          root["transition"] = transitionTime;
+        
+          char buffer[root.measureLength() + 1];
+          root.printTo(buffer, sizeof(buffer));
+        
+          client.publish(light_state_topic, buffer, true);
+        }
       }
       if ( rcCOff == rcReceived ) {
-        relais3State = false;
-        Serial.println("RC singal OFF received: Channel C switch status changed to HIGH=OFF");
+        Serial.println("RC singal OFF received: Channel C");
+        stateOn = false;
+        setColor(0, 0, 0);
+        // Send status to MQTT
+          StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
+
+          JsonObject& root = jsonBuffer.createObject();
+        
+          root["state"] = (stateOn) ? on_cmd : off_cmd;
+                  
+          char buffer[root.measureLength() + 1];
+          root.printTo(buffer, sizeof(buffer));
+        
+          client.publish(light_state_topic, buffer, true);
       }
       if ( rcDOn == rcReceived ) {
-        relais4State = true;
-        Serial.println("RC singal ON received: Channel D switch status changed to LOW=ON");
+        Serial.println("RC singal ON received: Channel D");
+        gCurrentPatternNumber = (gCurrentPatternNumber + 1) % ARRAY_SIZE( gPatterns);
+        effectString = gPatterns[gCurrentPatternNumber];
+        Serial.print("LED Effect changed to: ");
+        Serial.println(effectString);
+        if ( stateOn ) {
+          //sendState();
+        }
+        else {
+          stateOn = true;
+        }
+        buttonEffectChanged = !buttonEffectChanged; // Used later to send status to MQTT
+        gPreviousPatternNumber = gCurrentPatternNumber;
       }
       if ( rcDOff == rcReceived ) {
-        relais4State = false;
-        Serial.println("RC singal OFF received: Channel D switch status changed to HIGH=OFF");
+        Serial.println("RC singal OFF received: Channel D");
+        gCurrentPatternNumber = (gCurrentPatternNumber - 1) % ARRAY_SIZE( gPatterns);
+        effectString = gPatterns[gCurrentPatternNumber];
+        Serial.print("LED Effect changed to: ");
+        Serial.println(effectString);
+        if ( stateOn ) {
+          //sendState();
+        }
+        else {
+          stateOn = true;
+        }
+        buttonEffectChanged = !buttonEffectChanged; // Used later to send status to MQTT
+        gPreviousPatternNumber = gCurrentPatternNumber;
       }
     }
     mySwitch.resetAvailable();
   }
 
-  // Relais 1
-  if ( (relais1State == true && relais1StateOld != relais1State) ) {
+  
+
+  // relay 1
+  if ( (relay1State == true && relay1StateOld != relay1State) ) {
       pin1State = LOW;
-      digitalWrite(relais1Pin, pin1State);
-      sendStateRelais1();
-      relais1StateOld = !relais1StateOld;
+      digitalWrite(relay1Pin, pin1State);
+      sendStaterelay1();
+      relay1StateOld = !relay1StateOld;
     }
-  if ( (relais1State == false && relais1StateOld != relais1State) ) {
+  if ( (relay1State == false && relay1StateOld != relay1State) ) {
       pin1State = HIGH;
-      digitalWrite(relais1Pin, pin1State);
-      sendStateRelais1();
-      relais1StateOld = !relais1StateOld;
+      digitalWrite(relay1Pin, pin1State);
+      sendStaterelay1();
+      relay1StateOld = !relay1StateOld;
     }
 
-  // Relais 2
-  if ( (relais2State == true && relais2StateOld != relais2State) ) {
+  // relay 2
+  if ( (relay2State == true && relay2StateOld != relay2State) ) {
       pin2State = LOW;
-      digitalWrite(relais2Pin, pin2State);
-      sendStateRelais2();
-      relais2StateOld = !relais2StateOld;
+      digitalWrite(relay2Pin, pin2State);
+      sendStaterelay2();
+      relay2StateOld = !relay2StateOld;
     }
-  if ( (relais2State == false && relais2StateOld != relais2State) ) {
+  if ( (relay2State == false && relay2StateOld != relay2State) ) {
       pin2State = HIGH;
-      digitalWrite(relais2Pin, pin2State);
-      sendStateRelais2();
-      relais2StateOld = !relais2StateOld;
+      digitalWrite(relay2Pin, pin2State);
+      sendStaterelay2();
+      relay2StateOld = !relay2StateOld;
     }
 
-  // Relais 3
-  if ( (relais3State == true && relais3StateOld != relais3State) ) {
-      pin3State = LOW;
-      digitalWrite(relais3Pin, pin3State);
-      sendStateRelais3();
-      relais3StateOld = !relais3StateOld;
-    }
-  if ( (relais3State == false && relais3StateOld != relais3State) ) {
-      pin3State = HIGH;
-      digitalWrite(relais3Pin, pin3State);
-      sendStateRelais3();
-      relais3StateOld = !relais3StateOld;
-    }
-
-  // Relais 4
-  if ( (relais4State == true && relais4StateOld != relais4State) ) {
-      pin4State = LOW;
-      digitalWrite(relais4Pin, pin4State);
-      sendStateRelais4();
-      relais4StateOld = !relais4StateOld;
-    }
-  if ( (relais4State == false && relais4StateOld != relais4State) ) {
-      pin4State = HIGH;
-      digitalWrite(relais4Pin, pin4State);
-      sendStateRelais4();
-      relais4StateOld = !relais4StateOld;
-    }
 
   //EFFECT BPM
   if (effectString == "bpm") {
@@ -859,35 +819,6 @@ void loop() {
       transitionTime = 30;
     }
     showleds();
-  }
-
-
-  //EFFECT CYCLON RAINBOW
-  if (effectString == "cyclonrainbow") {                    //Single Dot Down
-    static uint8_t hue = 0;
-    // First slide the led in one direction
-    for (int i = 0; i < NUM_LEDS; i++) {
-      // Set the i'th led to red
-      leds[i] = CHSV(hue++, 255, 255);
-      // Show the leds
-      showleds();
-      // now that we've shown the leds, reset the i'th led to black
-      // leds[i] = CRGB::Black;
-      fadeall();
-      // Wait a little bit before we loop around and do it again
-      delay(10);
-    }
-    for (int i = (NUM_LEDS) - 1; i >= 0; i--) {
-      // Set the i'th led to red
-      leds[i] = CHSV(hue++, 255, 255);
-      // Show the leds
-      showleds();
-      // now that we've shown the leds, reset the i'th led to black
-      // leds[i] = CRGB::Black;
-      fadeall();
-      // Wait a little bit before we loop around and do it again
-      delay(10);
-    }
   }
 
 
@@ -939,34 +870,6 @@ void loop() {
     }
     if (transitionTime == 0 or transitionTime == NULL) {
       transitionTime = 130;
-    }
-    showleds();
-  }
-
-
-  //EFFECT LIGHTNING
-  if (effectString == "lightning") {
-    twinklecounter = twinklecounter + 1;                     //Resets strip if previous animation was running
-    if (twinklecounter < 2) {
-      FastLED.clear();
-      FastLED.show();
-    }
-    ledstart = random16(NUM_LEDS);           // Determine starting location of flash
-    ledlen = random16(NUM_LEDS - ledstart);  // Determine length of flash (not to go beyond NUM_LEDS-1)
-    for (int flashCounter = 0; flashCounter < random8(3, flashes); flashCounter++) {
-      if (flashCounter == 0) dimmer = 5;    // the brightness of the leader is scaled down by a factor of 5
-      else dimmer = random8(1, 3);          // return strokes are brighter than the leader
-      fill_solid(leds + ledstart, ledlen, CHSV(255, 0, 255 / dimmer));
-      showleds();    // Show a section of LED's
-      delay(random8(4, 10));                // each flash only lasts 4-10 milliseconds
-      fill_solid(leds + ledstart, ledlen, CHSV(255, 0, 0)); // Clear the section of LED's
-      showleds();
-      if (flashCounter == 0) delay (130);   // longer delay until next flash after the leader
-      delay(50 + random8(100));             // shorter delay between strokes
-    }
-    delay(random8(frequency) * 100);        // delay between strikes
-    if (transitionTime == 0 or transitionTime == NULL) {
-      transitionTime = 0;
     }
     showleds();
   }
@@ -1041,7 +944,7 @@ void loop() {
   }
 
 
-  //EFFECT SIENLON
+  //EFFECT SINELON
   if (effectString == "sinelon") {
     fadeToBlackBy( leds, NUM_LEDS, 20);
     int pos = beatsin16(13, 0, NUM_LEDS - 1);
@@ -1158,8 +1061,6 @@ void loop() {
       }
       showleds();        
   }
-
-
 
 
   EVERY_N_MILLISECONDS(10) {
@@ -1294,8 +1195,18 @@ void loop() {
   }
 
   if (buttonEffectChanged) {
-    sendState();
-    Serial.println("Here I am");
+    StaticJsonBuffer<BUFFER_SIZE> jsonBuffer;
+
+    JsonObject& root = jsonBuffer.createObject();
+  
+    root["state"] = (stateOn) ? on_cmd : off_cmd;
+    
+    root["effect"] = effectString.c_str();
+  
+    char buffer[root.measureLength() + 1];
+    root.printTo(buffer, sizeof(buffer));
+  
+    client.publish(light_state_topic, buffer, true);
     buttonEffectChanged = !buttonEffectChanged;  
   }
   
